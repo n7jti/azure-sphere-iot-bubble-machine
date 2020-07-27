@@ -32,6 +32,8 @@
 #include <iothub.h>
 #include <azure_sphere_provisioning.h>
 
+#include "motor.h"
+
 // define resource macro's so we don't need the hardware headers
 #define SAMPLE_BUTTON_1 12
 #define SAMPLE_LED 8
@@ -56,7 +58,8 @@ typedef enum
     ExitCode_Init_AzureTimer = 10,
     ExitCode_IsButtonPressed_GetValue = 11,
     ExitCode_Init_GPIO = 12,
-    ExitCode_Init_PWM = 13
+    ExitCode_Init_PWM = 13,
+    ExitCode_Init_Motor = 14,
 } ExitCode;
 
 static volatile sig_atomic_t exitCode = ExitCode_Success;
@@ -101,15 +104,10 @@ static int sendMessageButtonGpioFd = -1;
 static int deviceTwinStatusLedGpioFd = -1;
 
 // Motor Out
-static int motorPwmFd = -1;
+static int motorA = -1;
+static int motorB = -1;
 static PWM_ChannelId motorAChannel = 0;
 static PWM_ChannelId motorBChannel = 1;
-
-// Motor Control
-static int ain1Fd = -1;
-static int ain2Fd = -1;
-static int bin1Fd = -1;
-static int bin2Fd = -1;
 
 // Timer / polling
 static EventLoop *eventLoop = NULL;
@@ -275,81 +273,24 @@ static ExitCode InitPeripheralsAndHandlers(void)
         return ExitCode_Init_TwinStatusLed;
     }
 
-    // GPIO
+    // Motors
 
-    Log_Debug("Opening AIN1 (GPIO4) as output.\n");
-    ain1Fd =
-        GPIO_OpenAsOutput(4, GPIO_OutputMode_PushPull, GPIO_Value_High);
-    if (ain1Fd == -1)
+    Log_Debug("Opening Motor A.\n");
+    motorA = Motor_Open(4, 5, 0, motorAChannel, 20000);
+    Motor_Move(motorA, 20);
+    if (motorA < 0)
     {
-        Log_Debug("ERROR: Could not open  AIN1 (GPIO4): %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_GPIO;
+        Log_Debug("ERROR: Could not open motor A (%d): %s (%d).\n", motorA, strerror(errno), errno);
+        return ExitCode_Init_Motor;
     }
 
-    Log_Debug("Opening AIN2 (GPIO5) as output.\n");
-    ain2Fd =
-        GPIO_OpenAsOutput(5, GPIO_OutputMode_PushPull, GPIO_Value_Low);
-    if (ain2Fd == -1)
+    Log_Debug("Opening Motor B.\n");
+    motorB = Motor_Open(6, 7, 0, motorBChannel, 20000);
+    Motor_Move(motorB, 100);
+    if (motorB < 0)
     {
-        Log_Debug("ERROR: Could not open  AIN2 (GPIO): %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_GPIO;
-    }
-
-    Log_Debug("Opening BIN1 (GPIO6) as output.\n");
-    bin1Fd =
-        GPIO_OpenAsOutput(6, GPIO_OutputMode_PushPull, GPIO_Value_High);
-    if (bin1Fd == -1)
-    {
-        Log_Debug("ERROR: Could not open  BIN1 (GPIO6): %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_GPIO;
-    }
-
-    Log_Debug("Opening BIN2 (GPIO7) as output.\n");
-    bin2Fd =
-        GPIO_OpenAsOutput(7, GPIO_OutputMode_PushPull, GPIO_Value_Low);
-    if (bin2Fd == -1)
-    {
-        Log_Debug("ERROR: Could not open  BIN2 (GPIO7): %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_GPIO;
-    }
-
-    // PWM
-
-    motorPwmFd = PWM_Open(0);
-    if (motorPwmFd == -1)
-    {
-        Log_Debug(
-            "Error opening PWM_CONTROLLER_0: %s (%d). Check that app_manifest.json "
-            "includes the PWM used.\n",
-            strerror(errno), errno);
-        return ExitCode_Init_PWM;
-    }
-
-    // Set Motor Speed:
-    static PwmState motorAPwmState = {.period_nsec = 20000,
-                                      .polarity = PWM_Polarity_Normal,
-                                      .dutyCycle_nsec = 4000,
-                                      .enabled = true};
-
-    static PwmState motorBPwmState = {.period_nsec = 20000,
-                                      .polarity = PWM_Polarity_Normal,
-                                      .dutyCycle_nsec = 20000,
-                                      .enabled = true};
-
-    if (0 != PWM_Apply(motorPwmFd, motorAChannel, &motorAPwmState))
-    {
-        Log_Debug(
-            "Failed to start motor: %s (%d). \n",
-            strerror(errno), errno);
-        return ExitCode_Init_PWM;
-    }
-
-    if (0 != PWM_Apply(motorPwmFd, motorBChannel, &motorBPwmState))
-    {
-        Log_Debug(
-            "Failed to start motor: %s (%d). \n",
-            strerror(errno), errno);
-        return ExitCode_Init_PWM;
+        Log_Debug("ERROR: Could not open motor B (%d): %s (%d).\n", motorA, strerror(errno), errno);
+        return ExitCode_Init_Motor;
     }
 
     // Set up a timer to poll for button events.

@@ -19,9 +19,10 @@ add_executable(${PROJECT_NAME}
     src/main.c
     inc/eventloop_timer_utilities.h
     src/eventloop_timer_utilities.c
+    inc/motor.h
+    src/motor.c
     inc/parson.h
-    src/parson.c
-)
+    src/parson.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE inc)
 target_include_directories(${PROJECT_NAME} PUBLIC ${AZURE_SPHERE_API_SET_DIR}/usr/include/azureiot)
