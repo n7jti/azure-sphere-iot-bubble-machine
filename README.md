@@ -15,7 +15,7 @@ Employee Hackathon).
 
 Here is how to hook up your sphere to the motors:
 
-| From                          | To                           |    Notes                |
+| From                          | To                          |    Notes                |
 | ----                          | --                          | -----                   |
 | 5v Motor Supply               | 5v Rail                     |                         |
 | 5v Rail                       | Pin 1 TM56612FNG Breakout   | VM (V-Motor)            |
