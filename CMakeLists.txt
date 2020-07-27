@@ -28,21 +28,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${AZURE_SPHERE_API_SET_DIR}/us
 target_compile_definitions(${PROJECT_NAME} PUBLIC AZURE_IOT_HUB_CONFIGURED)
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m azureiot applibs pthread gcc_s c)
 
-
-find_program(POWERSHELL powershell.exe)
-
-if (POWERSHELL)
-    # Run validate_manifest script during build
-    add_custom_target(ValidateManifest ALL
-        COMMAND ${POWERSHELL} -ExecutionPolicy Bypass -NoProfile -NonInteractive -File ${CMAKE_SOURCE_DIR}/script/validate_manifest.ps1
-        DEPENDS ${CMAKE_SOURCE_DIR}/app_manifest.json)
-else()
-    # Warn users without PowerShell to update their manifest
-    add_custom_target(ValidateManifest ALL
-        COMMAND echo "Please ensure that you have updated app_manifest.json as described in IoTCentral.md or IoTHub.md, as appropriate."
-        DEPENDS ${CMAKE_SOURCE_DIR}/app_manifest.json)
-endif()
-
 azsphere_target_add_image_package(${PROJECT_NAME})
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
