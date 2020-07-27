@@ -3,14 +3,28 @@
     "Name": "bubbles",
     "ComponentId": "647fa6d7-f1b1-4dc7-88fd-0e8220aed1d8",
     "EntryPoint": "/bin/app",
-    "CmdArgs": [],
+    "CmdArgs": [
+        "0ne0010FDBD"
+    ],
     "Capabilities": {
-        "AllowedConnections": [],
-        "Pwm": [
-            "PWM-CONTROLLER-2"
+        "AllowedConnections": [
+            "global.azure-devices-provisioning.net",
+            "iotc-4294c837-d92c-4a98-9240-924844cb22a0.azure-devices.net",
+            "iotc-061ba0d1-ad5a-474b-a07d-3989796e6e33.azure-devices.net",
+            "iotc-1e0379ba-a6c0-4d6d-b692-d566fe5d6655.azure-devices.net",
+            "iotc-497e6ad5-b551-41b3-927f-c44e30e2bc72.azure-devices.net",
+            "iotc-20dde219-ce50-4899-8cf0-7d35098ee1b4.azure-devices.net",
+            "iotc-eb5936e6-4b3b-4683-8d6c-ea9445874620.azure-devices.net",
+            "iotc-201029e7-a647-4002-90f8-b09aa9a07d23.azure-devices.net",
+            "iotc-dc31b5ed-f435-4da7-99fa-cf7494516b3c.azure-devices.net",
+            "iotc-07db8167-f975-455d-9045-f5f815089b77.azure-devices.net",
+            "iotc-9ae6e5dc-6f77-466b-8085-163b8de81822.azure-devices.net"
         ],
-        "Uart": [],
-        "WifiConfig": false
+        "Gpio": [
+            "$SAMPLE_BUTTON_1",
+            "$SAMPLE_LED"
+        ],
+        "DeviceAuthentication": "a3826327-003e-423e-87fd-df8a3784b2d8"
     },
     "ApplicationType": "Default"
 }
