@@ -21,8 +21,8 @@
             "iotc-9ae6e5dc-6f77-466b-8085-163b8de81822.azure-devices.net"
         ],
         "Gpio": [
-            "$SAMPLE_BUTTON_1",
-            "$SAMPLE_LED"
+            12,
+            8
         ],
         "DeviceAuthentication": "a3826327-003e-423e-87fd-df8a3784b2d8"
     },
