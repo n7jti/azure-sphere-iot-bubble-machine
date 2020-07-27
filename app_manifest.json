@@ -1,0 +1,16 @@
+{
+    "SchemaVersion": 1,
+    "Name": "bubbles",
+    "ComponentId": "647fa6d7-f1b1-4dc7-88fd-0e8220aed1d8",
+    "EntryPoint": "/bin/app",
+    "CmdArgs": [],
+    "Capabilities": {
+        "AllowedConnections": [],
+        "Pwm": [
+            "PWM-CONTROLLER-2"
+        ],
+        "Uart": [],
+        "WifiConfig": false
+    },
+    "ApplicationType": "Default"
+}
