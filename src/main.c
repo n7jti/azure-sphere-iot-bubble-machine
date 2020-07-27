@@ -1,22 +1,6 @@
-/* Copyright (c) Microsoft Corporation. All rights reserved.
+/* Copyright (c) Alan Ludwig
+   Portions are based on the Azure Sphere IoT Sample which is (c) Microsoft Corp
    Licensed under the MIT License. */
-
-// This sample C application demonstrates how to interface Azure Sphere devices with Azure IoT
-// services. Using the Azure IoT SDK C APIs, it shows how to:
-// 1. Use Device Provisioning Service (DPS) to connect to Azure IoT Hub/Central with
-// certificate-based authentication
-// 2. Use Device Twin to upload simulated temperature measurements, upload button press events and
-// receive a desired LED state from Azure IoT Hub/Central
-// 3. Use Direct Methods to receive a "Trigger Alarm" command from Azure IoT Hub/Central
-
-// You will need to provide four pieces of information to use this application, all of which are set
-// in the app_manifest.json.
-// 1. The Scope Id for the Device Provisioning Service - DPS (set in 'CmdArgs')
-// 2. The Tenant Id obtained from 'azsphere tenant show-selected' (set in 'DeviceAuthentication')
-// 3. The Azure DPS Global endpoint address 'global.azure-devices-provisioning.net'
-//    (set in 'AllowedConnections')
-// 4. The Azure IoT Hub Endpoint address(es) that DPS is configured to direct this device to (set in
-// 'AllowedConnections')
 
 #include <signal.h>
 #include <stdbool.h>
@@ -32,18 +16,11 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 #include <applibs/gpio.h>
+#include <applibs/pwm.h>
 #include <applibs/storage.h>
 #include <applibs/eventloop.h>
 
-// By default, this sample targets hardware that follows the MT3620 Reference
-// Development Board (RDB) specification, such as the MT3620 Dev Kit from
-// Seeed Studio.
-//
-// To target different hardware, you'll need to update CMakeLists.txt. See
-// https://github.com/Azure/azure-sphere-samples/tree/master/Hardware for more details.
-//
-// This #include imports the sample_hardware abstraction from that hardware definition.
-// #include <hw/sample_hardware.h>
+// We are targeting the MT3620 Dev Kit
 
 #include "eventloop_timer_utilities.h"
 
@@ -67,23 +44,19 @@
 typedef enum
 {
     ExitCode_Success = 0,
-
     ExitCode_TermHandler_SigTerm = 1,
-
     ExitCode_Main_EventLoopFail = 2,
-
     ExitCode_ButtonTimer_Consume = 3,
-
     ExitCode_AzureTimer_Consume = 4,
-
     ExitCode_Init_EventLoop = 5,
     ExitCode_Init_MessageButton = 6,
     ExitCode_Init_OrientationButton = 7,
     ExitCode_Init_TwinStatusLed = 8,
     ExitCode_Init_ButtonPollTimer = 9,
     ExitCode_Init_AzureTimer = 10,
-
-    ExitCode_IsButtonPressed_GetValue = 11
+    ExitCode_IsButtonPressed_GetValue = 11,
+    ExitCode_Init_GPIO = 12,
+    ExitCode_Init_PWM = 13
 } ExitCode;
 
 static volatile sig_atomic_t exitCode = ExitCode_Success;
@@ -126,6 +99,17 @@ static int sendMessageButtonGpioFd = -1;
 
 // LED
 static int deviceTwinStatusLedGpioFd = -1;
+
+// Motor Out
+static int motorPwmFd = -1;
+static PWM_ChannelId motorAChannel = 0;
+static PWM_ChannelId motorBChannel = 1;
+
+// Motor Control
+static int ain1Fd = -1;
+static int ain2Fd = -1;
+static int bin1Fd = -1;
+static int bin2Fd = -1;
 
 // Timer / polling
 static EventLoop *eventLoop = NULL;
@@ -289,6 +273,83 @@ static ExitCode InitPeripheralsAndHandlers(void)
     {
         Log_Debug("ERROR: Could not open SAMPLE_LED: %s (%d).\n", strerror(errno), errno);
         return ExitCode_Init_TwinStatusLed;
+    }
+
+    // GPIO
+
+    Log_Debug("Opening AIN1 (GPIO4) as output.\n");
+    ain1Fd =
+        GPIO_OpenAsOutput(4, GPIO_OutputMode_PushPull, GPIO_Value_High);
+    if (ain1Fd == -1)
+    {
+        Log_Debug("ERROR: Could not open  AIN1 (GPIO4): %s (%d).\n", strerror(errno), errno);
+        return ExitCode_Init_GPIO;
+    }
+
+    Log_Debug("Opening AIN2 (GPIO5) as output.\n");
+    ain2Fd =
+        GPIO_OpenAsOutput(5, GPIO_OutputMode_PushPull, GPIO_Value_Low);
+    if (ain2Fd == -1)
+    {
+        Log_Debug("ERROR: Could not open  AIN2 (GPIO): %s (%d).\n", strerror(errno), errno);
+        return ExitCode_Init_GPIO;
+    }
+
+    Log_Debug("Opening BIN1 (GPIO6) as output.\n");
+    bin1Fd =
+        GPIO_OpenAsOutput(6, GPIO_OutputMode_PushPull, GPIO_Value_High);
+    if (bin1Fd == -1)
+    {
+        Log_Debug("ERROR: Could not open  BIN1 (GPIO6): %s (%d).\n", strerror(errno), errno);
+        return ExitCode_Init_GPIO;
+    }
+
+    Log_Debug("Opening BIN2 (GPIO7) as output.\n");
+    bin2Fd =
+        GPIO_OpenAsOutput(7, GPIO_OutputMode_PushPull, GPIO_Value_Low);
+    if (bin2Fd == -1)
+    {
+        Log_Debug("ERROR: Could not open  BIN2 (GPIO7): %s (%d).\n", strerror(errno), errno);
+        return ExitCode_Init_GPIO;
+    }
+
+    // PWM
+
+    motorPwmFd = PWM_Open(0);
+    if (motorPwmFd == -1)
+    {
+        Log_Debug(
+            "Error opening PWM_CONTROLLER_0: %s (%d). Check that app_manifest.json "
+            "includes the PWM used.\n",
+            strerror(errno), errno);
+        return ExitCode_Init_PWM;
+    }
+
+    // Set Motor Speed:
+    static PwmState motorAPwmState = {.period_nsec = 20000,
+                                      .polarity = PWM_Polarity_Normal,
+                                      .dutyCycle_nsec = 4000,
+                                      .enabled = true};
+
+    static PwmState motorBPwmState = {.period_nsec = 20000,
+                                      .polarity = PWM_Polarity_Normal,
+                                      .dutyCycle_nsec = 20000,
+                                      .enabled = true};
+
+    if (0 != PWM_Apply(motorPwmFd, motorAChannel, &motorAPwmState))
+    {
+        Log_Debug(
+            "Failed to start motor: %s (%d). \n",
+            strerror(errno), errno);
+        return ExitCode_Init_PWM;
+    }
+
+    if (0 != PWM_Apply(motorPwmFd, motorBChannel, &motorBPwmState))
+    {
+        Log_Debug(
+            "Failed to start motor: %s (%d). \n",
+            strerror(errno), errno);
+        return ExitCode_Init_PWM;
     }
 
     // Set up a timer to poll for button events.

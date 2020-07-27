@@ -9,5 +9,11 @@
         "AZURE_SPHERE_TARGET_API_SET": "latest-beta"
     },
     "cmake.configureOnOpen": true,
-    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+    "cSpell.words": [
+        "Enqueues",
+        "GPIO",
+        "LEDs",
+        "iotc"
+    ]
 }
