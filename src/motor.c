@@ -5,7 +5,7 @@
 
 struct motor
 {
-	int fdMotor;
+	int hMotor;
 	int fdPin1;
 	int fdPin2;
 	struct pwmController *pwmData;
@@ -17,17 +17,17 @@ struct motor
 struct motor motors[MAX_MOTORS] = {0};
 int motorId = 0;
 
-int GetIndex(int fdMotor)
+struct motor *Find(int hMotor)
 {
 	for (int i = 0; i < MAX_MOTORS; i++)
 	{
-		if (motors[i].fdMotor == fdMotor)
+		if (motors[i].hMotor == hMotor)
 		{
-			return i;
+			return &(motors[i]);
 		}
 	}
 
-	return -1;
+	return NULL;
 }
 
 int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId pwmChannel, unsigned int period_nsec)
@@ -37,7 +37,7 @@ int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId
 	int index = 0;
 	while (index < MAX_MOTORS)
 	{
-		if (motors[index].fdMotor == 0)
+		if (motors[index].hMotor == 0)
 		{
 			break;
 		}
@@ -85,60 +85,56 @@ int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId
 		return FAILED_APPLY_PWM;
 	}
 
-	m.fdMotor = ++motorId;
+	m.hMotor = ++motorId;
 	motors[index] = m;
 
-	return m.fdMotor;
+	return m.hMotor;
 }
 
-int Motor_Close(int fdMotor)
+int Motor_Close(int hMotor)
 {
-	int i = GetIndex(fdMotor);
-	if (i == -1)
+	struct motor *motor = Find(hMotor);
+	if (motor == NULL)
 	{
 		return -1;
 	}
 
-	struct motor m = motors[i];
-
-	m.pwmState.enabled = false;
-	PWM_Apply(m.pwmData->fdPwm, m.pwmChannel, &m.pwmState);
-	close(m.fdPin1);
-	close(m.fdPin2);
+	motor->pwmState.enabled = false;
+	PWM_Apply(motor->pwmData->fdPwm, motor->pwmChannel, &(motor->pwmState));
+	close(motor->fdPin1);
+	close(motor->fdPin2);
 
 	return 0;
 }
 
-int Motor_Move(int fdMotor, int speed)
+int Motor_Move(int hMotor, int speed)
 {
-	int i = GetIndex(fdMotor);
-	if (i == -1)
+	struct motor *motor = Find(hMotor);
+	if (motor == NULL)
 	{
 		return -1;
 	}
 
-	struct motor m = motors[i];
-
 	if (speed > 0)
 	{ // Clockwise
-		if (GPIO_SetValue(m.fdPin1, GPIO_Value_High) == -1)
+		if (GPIO_SetValue(motor->fdPin1, GPIO_Value_High) == -1)
 		{
 			return -1;
 		}
 
-		if (GPIO_SetValue(m.fdPin2, GPIO_Value_Low) == -1)
+		if (GPIO_SetValue(motor->fdPin2, GPIO_Value_Low) == -1)
 		{
 			return -1;
 		}
 	}
 	else if (speed < 0)
 	{ // Counter Clockwise
-		if (GPIO_SetValue(m.fdPin1, GPIO_Value_Low) == -1)
+		if (GPIO_SetValue(motor->fdPin1, GPIO_Value_Low) == -1)
 		{
 			return -1;
 		}
 
-		if (GPIO_SetValue(m.fdPin2, GPIO_Value_High) == -1)
+		if (GPIO_SetValue(motor->fdPin2, GPIO_Value_High) == -1)
 		{
 			return -1;
 		}
@@ -147,20 +143,20 @@ int Motor_Move(int fdMotor, int speed)
 	}
 	else
 	{ // Break
-		if (GPIO_SetValue(m.fdPin1, GPIO_Value_High) == -1)
+		if (GPIO_SetValue(motor->fdPin1, GPIO_Value_High) == -1)
 		{
 			return -1;
 		}
 
-		if (GPIO_SetValue(m.fdPin2, GPIO_Value_High) == -1)
+		if (GPIO_SetValue(motor->fdPin2, GPIO_Value_High) == -1)
 		{
 			return -1;
 		}
 	}
 
-	m.pwmState.enabled = true;
-	m.pwmState.dutyCycle_nsec = m.pwmState.period_nsec * (unsigned int)speed / 100;
-	if (PWM_Apply(m.pwmData->fdPwm, m.pwmChannel, &m.pwmState) == -1)
+	motor->pwmState.enabled = true;
+	motor->pwmState.dutyCycle_nsec = motor->pwmState.period_nsec * (unsigned int)speed / 100;
+	if (PWM_Apply(motor->pwmData->fdPwm, motor->pwmChannel, &(motor->pwmState)) == -1)
 	{
 		return -1;
 	}
@@ -168,22 +164,20 @@ int Motor_Move(int fdMotor, int speed)
 	return 0;
 }
 
-int Motor_Coast(int fdMotor)
+int Motor_Coast(int hMotor)
 {
-	int i = GetIndex(fdMotor);
-	if (i == -1)
+	struct motor *motor = Find(hMotor);
+	if (motor == NULL)
 	{
 		return -1;
 	}
 
-	struct motor m = motors[i];
-
-	if (GPIO_SetValue(m.fdPin1, GPIO_Value_Low) == -1)
+	if (GPIO_SetValue(motor->fdPin1, GPIO_Value_Low) == -1)
 	{
 		return -1;
 	}
 
-	if (GPIO_SetValue(m.fdPin2, GPIO_Value_Low) == -1)
+	if (GPIO_SetValue(motor->fdPin2, GPIO_Value_Low) == -1)
 	{
 		return -1;
 	}
