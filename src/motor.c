@@ -30,6 +30,11 @@ struct motor *Find(int hMotor)
 	return NULL;
 }
 
+int Motor_Init()
+{
+	return initPwmController();
+}
+
 int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId pwmChannel, unsigned int period_nsec)
 {
 	struct motor m = {0};
@@ -103,7 +108,7 @@ int Motor_Close(int hMotor)
 	PWM_Apply(motor->pwmData->fdPwm, motor->pwmChannel, &(motor->pwmState));
 	close(motor->fdPin1);
 	close(motor->fdPin2);
-
+	ClosePwmController(motor->pwmData->pwmController);
 	return 0;
 }
 

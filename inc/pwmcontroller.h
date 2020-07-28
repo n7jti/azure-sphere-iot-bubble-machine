@@ -8,12 +8,15 @@ extern "C"
 {
 #endif
 
-	struct pwmController {
+	struct pwmController
+	{
 		PWM_ControllerId pwmController;
 		int fdPwm;
 	};
 
+	int initPwmController(void);
 	struct pwmController *GetPwmController(PWM_ControllerId pwmController);
+	void ClosePwmController(PWM_ControllerId pwmController);
 #ifdef __cplusplus
 }
 #endif
