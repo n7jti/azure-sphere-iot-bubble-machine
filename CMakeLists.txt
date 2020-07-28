@@ -22,7 +22,9 @@ add_executable(${PROJECT_NAME}
     inc/motor.h
     src/motor.c
     inc/parson.h
-    src/parson.c)
+    src/parson.c
+    inc/pwmcontroller.h
+    src/pwmcontroller.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE inc)
 target_include_directories(${PROJECT_NAME} PUBLIC ${AZURE_SPHERE_API_SET_DIR}/usr/include/azureiot)

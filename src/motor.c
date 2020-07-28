@@ -1,12 +1,7 @@
 #include "motor.h"
+#include "pwmcontroller.h"
 #include "unistd.h"
 #include <applibs/gpio.h>
-
-struct pwmController
-{
-	PWM_ControllerId pwmController;
-	int fdPwm;
-};
 
 struct motor
 {
@@ -21,49 +16,6 @@ struct motor
 #define MAX_MOTORS 8
 struct motor motors[MAX_MOTORS] = {0};
 int motorId = 0;
-
-#define MAX_CONTROLLERS 4
-struct pwmController pwmControllers[MAX_CONTROLLERS] = {0};
-
-struct pwmController *GetController(PWM_ControllerId pwmController)
-{
-	int emptyIndex = -1;
-	int index = 0;
-	while (index < MAX_CONTROLLERS)
-	{
-		if (pwmControllers[index].fdPwm == 0)
-		{
-			if (emptyIndex == -1)
-			{
-				emptyIndex = index;
-			}
-		}
-		else if (pwmControllers[index].pwmController == pwmController)
-		{
-			return &pwmControllers[index];
-		}
-
-		index++;
-	}
-
-	if (emptyIndex == -1)
-	{
-		// Max controllers are already in use.
-		return NULL;
-	}
-
-	struct pwmController pwm = {0};
-	pwm.pwmController = pwmController;
-	pwm.fdPwm = PWM_Open(pwmController);
-	if (pwm.fdPwm == -1)
-	{
-		// Failed to open PWM controller.
-		return NULL;
-	}
-
-	pwmControllers[index] = pwm;
-	return &pwmControllers[index];
-}
 
 int GetIndex(int fdMotor)
 {
@@ -111,7 +63,7 @@ int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId
 		return FAILED_OPEN_GPIO_PIN2;
 	}
 
-	m.pwmData = GetController(pwmController);
+	m.pwmData = GetPwmController(pwmController);
 	if (m.pwmData == NULL)
 	{
 		close(m.fdPin1);
