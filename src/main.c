@@ -286,7 +286,7 @@ static ExitCode InitPeripheralsAndHandlers(void)
 
     Log_Debug("Opening Motor B.\n");
     motorB = Motor_Open(6, 7, 0, motorBChannel, 20000);
-    Motor_Move(motorB, 100);
+    Motor_Move(motorB, 50);
     if (motorB < 0)
     {
         Log_Debug("ERROR: Could not open motor B (%d): %s (%d).\n", motorA, strerror(errno), errno);
