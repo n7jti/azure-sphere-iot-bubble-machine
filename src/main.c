@@ -227,6 +227,11 @@ static ExitCode InitPeripheralsAndHandlers(void)
     }
 
     // Motors
+    if (0 > Motor_Init())
+    {
+        Log_Debug("ERROR: Could not Initialize motor\n");
+        return ExitCode_Init_Motor;
+    }
 
     Log_Debug("Opening Motor A.\n");
     motorA = Motor_Open(4, 5, 0, motorAChannel, 20000);
@@ -292,6 +297,9 @@ static void ClosePeripheralsAndHandlers(void)
     }
 
     CloseFdAndPrintError(deviceTwinStatusLedGpioFd, "StatusLed");
+
+    Motor_Close(motorA);
+    Motor_Close(motorB);
 }
 
 /// <summary>

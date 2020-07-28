@@ -17,6 +17,8 @@ extern "C"
 		FAILED_APPLY_PWM = -5,
 	};
 
+	int Motor_Init(void);
+
 	// period_nsec is duration for one cycle (typically 100000 to 10000000)
 	int Motor_Open(int pin1, int pin2, PWM_ControllerId pwmController, PWM_ChannelId pwmChannel, unsigned int period_nsec);
 	int Motor_Close(int fdMotor);
