@@ -24,15 +24,8 @@
 
 #include "eventloop_timer_utilities.h"
 
-// Azure IoT SDK
-#include <iothub_client_core_common.h>
-#include <iothub_device_client_ll.h>
-#include <iothub_client_options.h>
-#include <iothubtransportmqtt.h>
-#include <iothub.h>
-#include <azure_sphere_provisioning.h>
-
 #include "motor.h"
+#include "networking.h"
 
 // define resource macro's so we don't need the hardware headers
 #define SAMPLE_LED 8
