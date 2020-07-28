@@ -34,16 +34,6 @@
             "name": "model",
             "schema": "string"
           },
-          {
-            "@id": "urn:testazuresphere:AzureSphereSampleDevice_5vg:StatusLED:1",
-            "@type": "Property",
-            "displayName": {
-              "en": "Status LED"
-            },
-            "name": "StatusLED",
-            "writable": true,
-            "schema": "boolean"
-          },
 		  {
             "@id": "urn:testazuresphere:AzureSphereSampleDevice_5vg:SpeedMotorA:1",
             "@type": "Property",
@@ -62,24 +52,6 @@
             },
             "name": "SpeedMotorB",
             "writable": true,
-            "schema": "double"
-          },
-          {
-            "@id": "urn:testazuresphere:AzureSphereSampleDevice_5vg:ButtonPress:1",
-            "@type": "Telemetry",
-            "displayName": {
-              "en": "Button Press"
-            },
-            "name": "ButtonPress",
-            "schema": "boolean"
-          },
-          {
-            "@id": "urn:testazuresphere:AzureSphereSampleDevice_5vg:Temperature:1",
-            "@type": "Telemetry",
-            "displayName": {
-              "en": "Temperature"
-            },
-            "name": "Temperature",
             "schema": "double"
           },
           {
