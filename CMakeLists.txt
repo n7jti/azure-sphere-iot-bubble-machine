@@ -26,7 +26,9 @@ add_executable(${PROJECT_NAME}
     inc/pwmcontroller.h
     src/pwmcontroller.c
     inc/networking.h
-    src/networking.c)
+    src/networking.c
+    inc/stepper.h
+    src/stepper.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE inc)
 target_include_directories(${PROJECT_NAME} PUBLIC ${AZURE_SPHERE_API_SET_DIR}/usr/include/azureiot)
