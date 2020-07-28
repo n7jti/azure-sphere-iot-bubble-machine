@@ -42,4 +42,3 @@ Here is how to hook up your sphere to the motors:
 This project uses C++ but Microsoft DOES NOT support C++ as a development language for Azure Sphere.   Azure Sphere is
 an example of embedded development and is fairly "bare metal".  Even though we are using C++
 the C++ library (i.e. STL) and much of the CRT (i.e. fopen) are not present in the tool-chain.  Beware!
-
