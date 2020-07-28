@@ -35,7 +35,6 @@
 #include "motor.h"
 
 // define resource macro's so we don't need the hardware headers
-#define SAMPLE_BUTTON_1 12
 #define SAMPLE_LED 8
 
 /// <summary>
@@ -48,15 +47,10 @@ typedef enum
     ExitCode_Success = 0,
     ExitCode_TermHandler_SigTerm = 1,
     ExitCode_Main_EventLoopFail = 2,
-    ExitCode_ButtonTimer_Consume = 3,
     ExitCode_AzureTimer_Consume = 4,
     ExitCode_Init_EventLoop = 5,
-    ExitCode_Init_MessageButton = 6,
-    ExitCode_Init_OrientationButton = 7,
     ExitCode_Init_TwinStatusLed = 8,
-    ExitCode_Init_ButtonPollTimer = 9,
     ExitCode_Init_AzureTimer = 10,
-    ExitCode_IsButtonPressed_GetValue = 11,
     ExitCode_Init_GPIO = 12,
     ExitCode_Init_PWM = 13,
     ExitCode_Init_Motor = 14,
@@ -87,18 +81,12 @@ static const char *GetAzureSphereProvisioningResultString(
 static void SendTelemetry(const char *jsonMessage);
 static void SetupAzureClient(void);
 static void SendSimulatedTelemetry(void);
-static void ButtonPollTimerEventHandler(EventLoopTimer *timer);
-static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState);
 static void AzureTimerEventHandler(EventLoopTimer *timer);
 
 // Initialization/Cleanup
 static ExitCode InitPeripheralsAndHandlers(void);
 static void CloseFdAndPrintError(int fd, const char *fdName);
 static void ClosePeripheralsAndHandlers(void);
-
-// File descriptors - initialized to invalid value
-// Button
-static int sendMessageButtonGpioFd = -1;
 
 // LED
 static int deviceTwinStatusLedGpioFd = -1;
@@ -111,7 +99,6 @@ static PWM_ChannelId motorBChannel = 1;
 
 // Timer / polling
 static EventLoop *eventLoop = NULL;
-static EventLoopTimer *buttonPollTimer = NULL;
 static EventLoopTimer *azureTimer = NULL;
 
 // Azure IoT poll periods
@@ -124,7 +111,6 @@ static int azureIoTPollPeriodSeconds = -1;
 static int telemetryCount = 0;
 
 // State variables
-static GPIO_Value_Type sendMessageButtonState = GPIO_Value_High;
 static bool statusLedOn = false;
 
 /// <summary>
@@ -178,23 +164,6 @@ int main(int argc, char *argv[])
     Log_Debug("Application exiting.\n");
 
     return exitCode;
-}
-
-/// <summary>
-/// Button timer event:  Check the status of the button
-/// </summary>
-static void ButtonPollTimerEventHandler(EventLoopTimer *timer)
-{
-    if (ConsumeEventLoopTimerEvent(timer) != 0)
-    {
-        exitCode = ExitCode_ButtonTimer_Consume;
-        return;
-    }
-
-    if (IsButtonPressed(sendMessageButtonGpioFd, &sendMessageButtonState))
-    {
-        SendTelemetry("{\"ButtonPress\" : \"True\"}");
-    }
 }
 
 /// <summary>
@@ -254,15 +223,6 @@ static ExitCode InitPeripheralsAndHandlers(void)
         return ExitCode_Init_EventLoop;
     }
 
-    // Open SAMPLE_BUTTON_1 GPIO as input
-    Log_Debug("Opening SAMPLE_BUTTON_1 as input.\n");
-    sendMessageButtonGpioFd = GPIO_OpenAsInput(SAMPLE_BUTTON_1);
-    if (sendMessageButtonGpioFd == -1)
-    {
-        Log_Debug("ERROR: Could not open SAMPLE_BUTTON_1: %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_MessageButton;
-    }
-
     // SAMPLE_LED is used to show Device Twin settings state
     Log_Debug("Opening SAMPLE_LED as output.\n");
     deviceTwinStatusLedGpioFd =
@@ -277,7 +237,7 @@ static ExitCode InitPeripheralsAndHandlers(void)
 
     Log_Debug("Opening Motor A.\n");
     motorA = Motor_Open(4, 5, 0, motorAChannel, 20000);
-    Motor_Move(motorA, 20);
+    Motor_Move(motorA, 40);
     if (motorA < 0)
     {
         Log_Debug("ERROR: Could not open motor A (%d): %s (%d).\n", motorA, strerror(errno), errno);
@@ -291,15 +251,6 @@ static ExitCode InitPeripheralsAndHandlers(void)
     {
         Log_Debug("ERROR: Could not open motor B (%d): %s (%d).\n", motorA, strerror(errno), errno);
         return ExitCode_Init_Motor;
-    }
-
-    // Set up a timer to poll for button events.
-    static const struct timespec buttonPressCheckPeriod = {.tv_sec = 0, .tv_nsec = 1000 * 1000};
-    buttonPollTimer = CreateEventLoopPeriodicTimer(eventLoop, &ButtonPollTimerEventHandler,
-                                                   &buttonPressCheckPeriod);
-    if (buttonPollTimer == NULL)
-    {
-        return ExitCode_Init_ButtonPollTimer;
     }
 
     azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
@@ -336,7 +287,6 @@ static void CloseFdAndPrintError(int fd, const char *fdName)
 /// </summary>
 static void ClosePeripheralsAndHandlers(void)
 {
-    DisposeEventLoopTimer(buttonPollTimer);
     DisposeEventLoopTimer(azureTimer);
     EventLoop_Close(eventLoop);
 
@@ -348,7 +298,6 @@ static void ClosePeripheralsAndHandlers(void)
         GPIO_SetValue(deviceTwinStatusLedGpioFd, GPIO_Value_High);
     }
 
-    CloseFdAndPrintError(sendMessageButtonGpioFd, "SendMessageButton");
     CloseFdAndPrintError(deviceTwinStatusLedGpioFd, "StatusLed");
 }
 
@@ -691,30 +640,4 @@ void SendSimulatedTelemetry(void)
         return;
     }
     SendTelemetry(telemetryBuffer);
-}
-
-/// <summary>
-///     Check whether a given button has just been pressed.
-/// </summary>
-/// <param name="fd">The button file descriptor</param>
-/// <param name="oldState">Old state of the button (pressed or released)</param>
-/// <returns>true if pressed, false otherwise</returns>
-static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
-{
-    bool isButtonPressed = false;
-    GPIO_Value_Type newState;
-    int result = GPIO_GetValue(fd, &newState);
-    if (result != 0)
-    {
-        Log_Debug("ERROR: Could not read button GPIO: %s (%d).\n", strerror(errno), errno);
-        exitCode = ExitCode_IsButtonPressed_GetValue;
-    }
-    else
-    {
-        // Button is pressed if it is low and different than last known state.
-        isButtonPressed = (newState != *oldState) && (newState == GPIO_Value_Low);
-        *oldState = newState;
-    }
-
-    return isButtonPressed;
 }
