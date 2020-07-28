@@ -470,6 +470,28 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
         TwinReportState("{\"StatusLED\":{\"value\":false}}");
     }
 
+    // The desired properties should have a "SpeedMotorA" object
+    JSON_Object *sMotorA = json_object_dotget_object(desiredProperties, "SpeedMotorA");
+    if (sMotorA != NULL)
+    {
+        // ... with a "value" field which is of type double
+        double speedValueA = json_object_get_number(sMotorA, "value");
+
+        Log_Debug("Changing speed of Motor A to %d.\n", speedValueA);
+        Motor_Move(motorA, (int) speedValueA);
+    }
+	
+	// The desired properties should have a "SpeedMotorB" object
+    JSON_Object *sMotorB = json_object_dotget_object(desiredProperties, "SpeedMotorB");
+    if (sMotorB != NULL)
+    {
+        // ... with a "value" field which is of type double
+        double speedValueB = json_object_get_number(sMotorB, "value");
+
+        Log_Debug("Changing speed of Motor B to %d.\n", speedValueB);
+        Motor_Move(motorB, (int) speedValueB);
+
+    }
 cleanup:
     // Release the allocated memory.
     json_value_free(rootProperties);
