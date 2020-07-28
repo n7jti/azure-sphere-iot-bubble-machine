@@ -27,9 +27,6 @@
 #include "motor.h"
 #include "networking.h"
 
-// define resource macro's so we don't need the hardware headers
-#define SAMPLE_LED 8
-
 /// <summary>
 /// Exit codes for this application. These are used for the
 /// application exit code. They must all be between zero and 255,
@@ -42,7 +39,6 @@ typedef enum
     ExitCode_Main_EventLoopFail = 2,
     ExitCode_AzureTimer_Consume = 4,
     ExitCode_Init_EventLoop = 5,
-    ExitCode_Init_TwinStatusLed = 8,
     ExitCode_Init_AzureTimer = 10,
     ExitCode_Init_GPIO = 12,
     ExitCode_Init_PWM = 13,
@@ -60,7 +56,7 @@ static const int keepalivePeriodSeconds = 20;
 static bool iothubAuthenticated = false;
 
 // Function declarations
-static void SendEventCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context);
+// static void SendEventCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context);
 static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payload,
                                size_t payloadSize, void *userContextCallback);
 static void TwinReportState(const char *jsonState);
@@ -71,18 +67,15 @@ static int DeviceMethodCallback(const char *methodName, const unsigned char *pay
 static const char *GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason);
 static const char *GetAzureSphereProvisioningResultString(
     AZURE_SPHERE_PROV_RETURN_VALUE provisioningResult);
-static void SendTelemetry(const char *jsonMessage);
+// static void SendTelemetry(const char *jsonMessage);
 static void SetupAzureClient(void);
 static void SendSimulatedTelemetry(void);
 static void AzureTimerEventHandler(EventLoopTimer *timer);
 
 // Initialization/Cleanup
 static ExitCode InitPeripheralsAndHandlers(void);
-static void CloseFdAndPrintError(int fd, const char *fdName);
+// static void CloseFdAndPrintError(int fd, const char *fdName);
 static void ClosePeripheralsAndHandlers(void);
-
-// LED
-static int deviceTwinStatusLedGpioFd = -1;
 
 // Motor Out
 static int motorA = -1;
@@ -102,9 +95,6 @@ static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60; // back off limit
 
 static int azureIoTPollPeriodSeconds = -1;
 static int telemetryCount = 0;
-
-// State variables
-static bool statusLedOn = false;
 
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
@@ -216,16 +206,6 @@ static ExitCode InitPeripheralsAndHandlers(void)
         return ExitCode_Init_EventLoop;
     }
 
-    // SAMPLE_LED is used to show Device Twin settings state
-    Log_Debug("Opening SAMPLE_LED as output.\n");
-    deviceTwinStatusLedGpioFd =
-        GPIO_OpenAsOutput(SAMPLE_LED, GPIO_OutputMode_PushPull, GPIO_Value_High);
-    if (deviceTwinStatusLedGpioFd == -1)
-    {
-        Log_Debug("ERROR: Could not open SAMPLE_LED: %s (%d).\n", strerror(errno), errno);
-        return ExitCode_Init_TwinStatusLed;
-    }
-
     // Motors
     if (0 > Motor_Init())
     {
@@ -263,6 +243,7 @@ static ExitCode InitPeripheralsAndHandlers(void)
     return ExitCode_Success;
 }
 
+#if 0
 /// <summary>
 ///     Closes a file descriptor and prints an error on failure.
 /// </summary>
@@ -279,6 +260,7 @@ static void CloseFdAndPrintError(int fd, const char *fdName)
         }
     }
 }
+#endif
 
 /// <summary>
 ///     Close peripherals and handlers.
@@ -289,14 +271,6 @@ static void ClosePeripheralsAndHandlers(void)
     EventLoop_Close(eventLoop);
 
     Log_Debug("Closing file descriptors\n");
-
-    // Leave the LEDs off
-    if (deviceTwinStatusLedGpioFd >= 0)
-    {
-        GPIO_SetValue(deviceTwinStatusLedGpioFd, GPIO_Value_High);
-    }
-
-    CloseFdAndPrintError(deviceTwinStatusLedGpioFd, "StatusLed");
 
     Motor_Close(motorA);
     Motor_Close(motorB);
@@ -454,30 +428,6 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
         desiredProperties = rootObject;
     }
 
-    // The desired properties should have a "StatusLED" object
-    JSON_Object *LEDState = json_object_dotget_object(desiredProperties, "StatusLED");
-    if (LEDState != NULL)
-    {
-        // ... with a "value" field which is a Boolean
-        int statusLedValue = json_object_get_boolean(LEDState, "value");
-        if (statusLedValue != -1)
-        {
-            statusLedOn = statusLedValue == 1;
-            GPIO_SetValue(deviceTwinStatusLedGpioFd,
-                          statusLedOn ? GPIO_Value_Low : GPIO_Value_High);
-        }
-    }
-
-    // Report current status LED state
-    if (statusLedOn)
-    {
-        TwinReportState("{\"StatusLED\":{\"value\":true}}");
-    }
-    else
-    {
-        TwinReportState("{\"StatusLED\":{\"value\":false}}");
-    }
-
     // The desired properties should have a "SpeedMotorA" object
     JSON_Object *sMotorA = json_object_dotget_object(desiredProperties, "SpeedMotorA");
     if (sMotorA != NULL)
@@ -486,10 +436,10 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
         double speedValueA = json_object_get_number(sMotorA, "value");
 
         Log_Debug("Changing speed of Motor A to %d.\n", speedValueA);
-        Motor_Move(motorA, (int) speedValueA);
+        Motor_Move(motorA, (int)speedValueA);
     }
-	
-	// The desired properties should have a "SpeedMotorB" object
+
+    // The desired properties should have a "SpeedMotorB" object
     JSON_Object *sMotorB = json_object_dotget_object(desiredProperties, "SpeedMotorB");
     if (sMotorB != NULL)
     {
@@ -497,8 +447,7 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
         double speedValueB = json_object_get_number(sMotorB, "value");
 
         Log_Debug("Changing speed of Motor B to %d.\n", speedValueB);
-        Motor_Move(motorB, (int) speedValueB);
-
+        Motor_Move(motorB, (int)speedValueB);
     }
 cleanup:
     // Release the allocated memory.
@@ -564,6 +513,7 @@ static const char *GetAzureSphereProvisioningResultString(
     }
 }
 
+#if 0
 /// <summary>
 ///     Sends telemetry to Azure IoT Hub
 /// </summary>
@@ -599,6 +549,7 @@ static void SendTelemetry(const char *jsonMessage)
     IoTHubMessage_Destroy(messageHandle);
 }
 
+
 /// <summary>
 ///     Callback invoked when the Azure IoT Hub send event request is processed.
 /// </summary>
@@ -606,6 +557,8 @@ static void SendEventCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *co
 {
     Log_Debug("INFO: Azure IoT Hub send telemetry event callback: status code %d.\n", result);
 }
+
+#endif
 
 /// <summary>
 ///     Enqueues a report containing Device Twin reported properties. The report is not sent
@@ -649,18 +602,5 @@ static void ReportedStateCallback(int result, void *context)
 /// </summary>
 void SendSimulatedTelemetry(void)
 {
-    // generate a simulated temperature
-    static float temperature = 50.0f;                    // starting temperature
-    float delta = ((float)(rand() % 41)) / 20.0f - 1.0f; // between -1.0 and +1.0
-    temperature += delta;
-
-    char telemetryBuffer[TELEMETRY_BUFFER_SIZE];
-    int len = snprintf(telemetryBuffer, TELEMETRY_BUFFER_SIZE, "{\"Temperature\":\"%3.2f\"}",
-                       temperature);
-    if (len < 0 || len >= TELEMETRY_BUFFER_SIZE)
-    {
-        Log_Debug("ERROR: Cannot write telemetry to buffer.\n");
-        return;
-    }
-    SendTelemetry(telemetryBuffer);
+    // no-op!
 }

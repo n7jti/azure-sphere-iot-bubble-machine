@@ -20,6 +20,7 @@
         "iotc",
         "pthread",
         "pwmcontroller",
-        "rtti"
+        "rtti",
+        "testazuresphere"
     ]
 }
