@@ -27,6 +27,8 @@ add_executable(${PROJECT_NAME}
     src/pwmcontroller.c
     inc/networking.h
     src/networking.c
+    inc/rotary_encoder.h
+    src/rotary_encoder.c
     inc/stepper.h
     src/stepper.c)
 
