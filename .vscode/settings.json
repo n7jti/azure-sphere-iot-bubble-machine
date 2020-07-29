@@ -21,6 +21,7 @@
         "pthread",
         "pwmcontroller",
         "rtti",
-        "testazuresphere"
+        "testazuresphere",
+        "theludwigfamily"
     ]
 }

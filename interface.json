@@ -1,0 +1,32 @@
+{
+    "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:1",
+    "@type": "Interface",
+    "displayName": {
+        "en": "Interface"
+    },
+    "contents": [
+        {
+            "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorA:1",
+            "@type": "Property",
+            "displayName": {
+                "en": "SpeedMotorA"
+            },
+            "name": "SpeedMotorA",
+            "writable": true,
+            "schema": "integer"
+        },
+        {
+            "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorB:1",
+            "@type": "Property",
+            "displayName": {
+                "en": "SpeedMotorB"
+            },
+            "name": "SpeedMotorB",
+            "writable": true,
+            "schema": "integer"
+        }
+    ],
+    "@context": [
+        "http://azureiot.com/v1/contexts/IoTModel.json"
+    ]
+}
