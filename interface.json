@@ -1,31 +1,48 @@
 {
-    "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:1",
-    "@type": "Interface",
-    "displayName": {
-        "en": "Interface"
-    },
-    "contents": [
+    "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_532:1",
+    "@type": "CapabilityModel",
+    "implements": [
         {
-            "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorA:1",
-            "@type": "Property",
+            "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_532:kibe68jzj:1",
+            "@type": "InterfaceInstance",
             "displayName": {
-                "en": "SpeedMotorA"
+                "en": "Interface"
             },
-            "name": "SpeedMotorA",
-            "writable": true,
-            "schema": "integer"
-        },
-        {
-            "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorB:1",
-            "@type": "Property",
-            "displayName": {
-                "en": "SpeedMotorB"
-            },
-            "name": "SpeedMotorB",
-            "writable": true,
-            "schema": "integer"
+            "name": "Hackathon2020IotBubbleMachine_216",
+            "schema": {
+                "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:1",
+                "@type": "Interface",
+                "displayName": {
+                    "en": "Interface"
+                },
+                "contents": [
+                    {
+                        "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorA:1",
+                        "@type": "Property",
+                        "displayName": {
+                            "en": "SpeedMotorA"
+                        },
+                        "name": "SpeedMotorA",
+                        "writable": true,
+                        "schema": "integer"
+                    },
+                    {
+                        "@id": "urn:ludwigIot:Hackathon2020IotBubbleMachine_216:SpeedMotorB:1",
+                        "@type": "Property",
+                        "displayName": {
+                            "en": "SpeedMotorB"
+                        },
+                        "name": "SpeedMotorB",
+                        "writable": true,
+                        "schema": "integer"
+                    }
+                ]
+            }
         }
     ],
+    "displayName": {
+        "en": "Hackathon2020 Iot Bubble Machine"
+    },
     "@context": [
         "http://azureiot.com/v1/contexts/IoTModel.json"
     ]
