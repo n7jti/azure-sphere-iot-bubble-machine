@@ -82,6 +82,8 @@ static int motorA = -1;
 static int motorB = -1;
 static PWM_ChannelId motorAChannel = 0;
 static PWM_ChannelId motorBChannel = 1;
+static int speedMotorA = 0;
+static int speedMotorB = 0;
 
 // Timer / polling
 static EventLoop *eventLoop = NULL;
@@ -215,7 +217,7 @@ static ExitCode InitPeripheralsAndHandlers(void)
 
     Log_Debug("Opening Motor A.\n");
     motorA = Motor_Open(4, 5, 0, motorAChannel, 20000);
-    Motor_Move(motorA, 40);
+    Motor_Move(motorA, speedMotorA);
     if (motorA < 0)
     {
         Log_Debug("ERROR: Could not open motor A (%d): %s (%d).\n", motorA, strerror(errno), errno);
@@ -224,7 +226,7 @@ static ExitCode InitPeripheralsAndHandlers(void)
 
     Log_Debug("Opening Motor B.\n");
     motorB = Motor_Open(6, 7, 0, motorBChannel, 20000);
-    Motor_Move(motorB, 50);
+    Motor_Move(motorB, speedMotorB);
     if (motorB < 0)
     {
         Log_Debug("ERROR: Could not open motor B (%d): %s (%d).\n", motorA, strerror(errno), errno);
@@ -291,7 +293,7 @@ static void ConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
     {
         // Send static device twin properties when connection is established
         TwinReportState(
-            "{\"manufacturer\":\"Microsoft\",\"model\":\"Azure Sphere Sample Device\"}");
+            "{\"SpeedMotorA\":\"0\",\"SpeedMotorB\":\"0\"}");
     }
 }
 
@@ -434,9 +436,9 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
     {
         // ... with a "value" field which is of type double
         double speedValueA = json_object_get_number(sMotorA, "value");
-
-        Log_Debug("Changing speed of Motor A to %d.\n", speedValueA);
-        Motor_Move(motorA, (int)speedValueA);
+        speedMotorA = (int)speedValueA;
+        Log_Debug("Changing speed of Motor A to %d.\n", speedMotorA);
+        Motor_Move(motorA, speedMotorA);
     }
 
     // The desired properties should have a "SpeedMotorB" object
@@ -445,10 +447,17 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsig
     {
         // ... with a "value" field which is of type double
         double speedValueB = json_object_get_number(sMotorB, "value");
-
-        Log_Debug("Changing speed of Motor B to %d.\n", speedValueB);
-        Motor_Move(motorB, (int)speedValueB);
+        speedMotorB = (int)speedValueB;
+        Log_Debug("Changing speed of Motor B to %d.\n", speedMotorB);
+        Motor_Move(motorB, speedMotorB);
     }
+
+    // update device twin
+
+    char twinBuffer[255];
+    int len = snprintf(twinBuffer, 255, "{\"SpeedMotorA\": %d,\"SpeedMotorB\": %d}", speedMotorA, speedMotorB);
+    TwinReportState(twinBuffer);
+
 cleanup:
     // Release the allocated memory.
     json_value_free(rootProperties);
